@@ -3,7 +3,9 @@ package fr.hocem.employeemanagement.controller;
 import fr.hocem.employeemanagement.exception.ResourceNotFoundException;
 import fr.hocem.employeemanagement.model.Employee;
 import fr.hocem.employeemanagement.repository.EmployeeRepository;
+import fr.hocem.employeemanagement.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,57 +15,64 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/")
 public class EmployeeController {
 
-    @Autowired
-    EmployeeRepository employeeRepository;
+    private final EmployeeService employeeService;
 
-    // get employees
-    @GetMapping("employees")
+    @Autowired
+    public EmployeeController(EmployeeService employeeService) {
+        this.employeeService = employeeService;
+    }
+
+    @Value("${app.name}")
+    private String appName;
+
+    @Value("${app.version}")
+    private String appVersion;
+
+    @GetMapping("/employees/version")
+    public String getAppDetails() {
+        return appName + " - " + appVersion;
+    }
+
+    @GetMapping("/employees")
     public List<Employee> getAllEmployee() {
-        return this.employeeRepository.findAll();
+        return this.employeeService.findAllEmployees();
     }
 
     // get employee by id
-    @GetMapping("employees/{id}")
+    @GetMapping("/employees/{id}")
     public ResponseEntity<Employee> getEmployee(@PathVariable("id") Long id) throws ResourceNotFoundException {
-        Employee employee = this.employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee Not Found for this Id: " + id));
-
-        return ResponseEntity.ok().body(employee);
-
+        return ResponseEntity.ok().body(this.employeeService.findEmployeeById(id));
     }
 
     // save employee
-    @PostMapping("employees")
+    @PostMapping("/employees")
     public Employee saveEmployee(@RequestBody Employee employee) {
-        return this.employeeRepository.save(employee);
+        return this.employeeService.addEmployee(employee);
     }
 
     // update employee
-    @PutMapping("employees/{id}")
+    @PutMapping("/employees/{id}")
     public ResponseEntity<Employee> updateEmployee(@PathVariable("id") Long id,
                                                    @Valid @RequestBody Employee employeeDetails)
             throws ResourceNotFoundException {
-        Employee employee = this.employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee nor found for this id: " + id));
+        Employee employee = this.employeeService.findEmployeeById(id);
 
+        employee.setName(employeeDetails.getName());
+        employee.setAge(employeeDetails.getAge());
         employee.setEmail(employeeDetails.getEmail());
-        employee.setLastname(employeeDetails.getLastname());
-        employee.setFirstname(employeeDetails.getFirstname());
-        final Employee updatedEmployee = employeeRepository.save(employee);
+        employee.setLocation(employeeDetails.getLocation());
+        employee.setDepartment(employeeDetails.getDepartment());
+        final Employee updatedEmployee = employeeService.addEmployee(employee);
         return ResponseEntity.ok(updatedEmployee);
     }
 
-    // delete employee
     @DeleteMapping("/employees/{id}")
     public Map<String, Boolean> deleteEmployee(@PathVariable(value = "id") Long employeeId)
             throws ResourceNotFoundException {
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found for this id :: " + employeeId));
 
-        employeeRepository.delete(employee);
+        employeeService.deleteEmployee(employeeId);
         Map<String, Boolean> response = new HashMap<>();
         response.put("deleted", Boolean.TRUE);
         return response;

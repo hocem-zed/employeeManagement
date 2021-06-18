@@ -1,5 +1,6 @@
 package fr.hocem.employeemanagement.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
@@ -17,10 +18,14 @@ public class Employee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     long id;
 
-    String firstname;
+    String name;
 
-    String lastname;
+    Long age;
+
+    String location;
 
     String email;
+
+    String department;
 
 }
